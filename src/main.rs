@@ -82,7 +82,9 @@ fn thread_work(game: &requests::Game, snake_id: String) -> Option<()>{
         }
         let mut last_dir = {
             let body = &start.board.snakes.iter().filter(|x| x.id==snake_id).next().unwrap().body;
-            Movement::from_offset(body[0]-body[1])
+            let body0 = body.get(0).unwrap_or(&requests::Point{x: 0, y: 0});
+            let body1 = body.get(1).unwrap_or(body0);
+            Movement::from_offset(*body0-*body1)
         };
         // 2. Explore the future
         let mut snake_idx = start.board.snakes.iter().position(|snake| snake.id==snake_id).unwrap();
@@ -180,6 +182,7 @@ fn thread_work(game: &requests::Game, snake_id: String) -> Option<()>{
             {
                 let mut i = 0;
                 new_board.snakes.retain(|_| (
+                    
                     !dead[i],
                     // killing snakes will shrink snake_idx sometimes. or set it to 100,000 if we died
                     snake_idx = if !dead[i] || snake_idx<i { snake_idx } else if snake_idx == i { 100_000 } else { snake_idx - 1 },
@@ -251,7 +254,9 @@ fn thread_work(game: &requests::Game, snake_id: String) -> Option<()>{
             }else{
                 break;
             }
-        }    
+        }
+
+        std::thread::yield_now();
     }
 }
 
