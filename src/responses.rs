@@ -31,6 +31,7 @@ pub enum HeadType {
     Fang,
     Pixel,
     Safe,
+    Silly,
     #[serde(rename = "sand-worm")]
     SandWorm,
     Shades,
@@ -64,21 +65,74 @@ pub enum TailType {
 pub struct Move {
     #[serde(rename = "move")]
     movement: Movement,
+    shout: String,
 }
 
 impl Move {
-    pub fn new(movement: Movement) -> Move {
-        Move { movement }
+    pub fn new(movement: Movement, shout: String) -> Move {
+        Move { movement, shout }
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone, Copy)]
 #[serde(rename_all(serialize = "lowercase", deserialize = "lowercase"))]
 pub enum Movement {
     Right,
     Left,
     Up,
     Down,
+}
+
+impl Movement{
+    pub const ALL: [Self; 4] = [
+            Self::Right, Self::Left, Self::Up, Self::Down
+    ];
+    pub fn opposite(self) -> Self {
+        use Movement::*;
+        match self{
+            Right => Left,
+            Left => Right,
+            Up => Down,
+            Down => Up
+        }
+    }
+    pub fn to_int(self) -> usize {
+        use Movement::*;
+        match self{
+            Right => 0,
+            Left => 1,
+            Up => 2,
+            Down => 3
+        }
+    }
+    pub fn to_offset(self) -> crate::requests::Point {
+        use Movement::*;
+        use crate::requests::Point;
+        match self{
+            Right => Point{x: 1, y: 0},
+            Left  => Point{x:-1, y: 0},
+            Up    => Point{x: 0, y:-1},
+            Down  => Point{x: 0, y: 1}
+        }
+    }
+    pub fn from_offset(offset: crate::requests::Point) -> Self {
+        use Movement::*;
+        use crate::requests::Point;
+        match offset{
+            Point{x: 1, y: 0} => Right,
+            Point{x:-1, y: 0} => Left,
+            Point{x: 0, y:-1} => Up,
+            Point{x: 0, y: 1} => Down,
+            Point{x: 0, y: 0} => {println!("WARNING: Origin Offset. {:?}", offset); Right},
+            offset => panic!("Invalid offset! {:?}", offset)
+        }
+    }
+}
+
+impl From<usize> for Movement {
+    fn from(int: usize) -> Movement {
+        Self::ALL[int]
+    }
 }
 
 #[cfg(test)]
@@ -137,6 +191,7 @@ mod test {
         assert_eq!(correct_start, deserialized_start);
     }
 
+    //TODO: Update the tests to the new API
     #[test]
     fn deserialize_move() {
         let string = "{\"move\":\"right\"}";
